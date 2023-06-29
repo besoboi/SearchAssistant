@@ -1,0 +1,1 @@
+rootProject.name = "ru.searchassistant.search-assistant"
