@@ -14,7 +14,7 @@ class JsonColumnType(
     private val serialize: (Any) -> String,
     private val deserialize: (String) -> Any
 ) : ColumnType() {
-    override fun sqlType() = "JSON"
+    override fun sqlType() = "JSONB"
 
     override fun setParameter(stmt: PreparedStatementApi, index: Int, value: Any?) {
         super.setParameter(

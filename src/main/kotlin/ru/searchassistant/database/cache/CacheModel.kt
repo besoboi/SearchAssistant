@@ -2,39 +2,45 @@ package ru.searchassistant.database.cache
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import ru.searchassistant.features.search_assist.SearchAssistReceiveRemote
 import ru.searchassistant.features.search_assist.SuggestionsModel
 
-object CacheModel : IntIdTable("cache", "id") {
+object CacheModel : Table("cache_table") {
     private val request = CacheModel.json<SearchAssistReceiveRemote>(
         "request",
         { Json.encodeToString(it as SearchAssistReceiveRemote) },
         { Json.decodeFromString(it) as SearchAssistReceiveRemote }
     )
-    private val statusCode = CacheModel.integer("status_code")
-    private val message = CacheModel.varchar("message", 50).nullable()
     private val response = CacheModel.json<SuggestionsModel>(
         "response",
         { Json.encodeToString(it as SuggestionsModel) },
         { Json.decodeFromString(it) as SuggestionsModel }
-    ).nullable()
+    )
 
     fun insertToDb(cacheDto: CacheDto) {
         transaction {
             CacheModel.insert {
                 it[request] = cacheDto.request
-                it[statusCode] = cacheDto.statusCode
-                it[message] = cacheDto.message
                 it[response] = cacheDto.response
             }
         }
     }
+
+    fun fetchRecord(request: SearchAssistReceiveRemote): CacheDto? {
+        return try {
+            val cacheModel = transaction { CacheModel.select { CacheModel.request.eq(request) }.single() }
+            return CacheDto(
+                request = cacheModel[CacheModel.request],
+                response = cacheModel[response]
+            )
+        } catch (e: NoSuchElementException) {
+            null
+        }
+    }
+
+
 }
-
-
-
-
-
